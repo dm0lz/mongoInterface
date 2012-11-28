@@ -1,0 +1,44 @@
+!!! 5
+%html{:lang => "es"}
+	%head
+		%title Mongo Interface
+		%link(rel="stylesheet" type="text/css" href="css/bootstrap.css")/
+		%link(rel="stylesheet" type="text/css" href="style.css")
+	%body
+		%nav
+			%header
+				%h1 Mongo Web Entry interface
+				%h3
+					- if @flash
+						= @flash
+			%section.navbar-inner
+			%br
+		%section.container
+			%form.form-horizontal(method="post" action="/resultat")
+				.control-group
+					.controls
+						%label.control-label Filter to Apply
+						%input(type="text" name="filter" placeholder="Can be a word, a hashtag etc...")
+					%br
+					.controls
+						%label.control-label Stream Type to Apply  
+						%input(type="text" name="streamType" placeholder="Can be Follow, Track or stream")
+					%br
+					.controls
+						%label.control-label Stream Argument 
+						%input(type="text" name="streamArgument" placeholder="can be a user id or a word no comma please")						
+					%br
+					.controls
+						%label.control-label Login field 
+						%input(type="text" name="login" placeholder="login field to be inserted in users collections")					
+
+										
+				.control-group.controls
+					%label.control-label 
+					%button.btn(type="submit")
+						Submit
+
+
+		%script(type='text/javascript' src='/js/jquery-1.8.3.js')
+		%script(type='text/javascript' src='/js/test.js')
+

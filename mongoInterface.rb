@@ -1,6 +1,6 @@
+require 'sinatra/base'
 require 'mongo'
 require 'pry'
-require 'sinatra'
 require 'haml'
 require 'sass'
 require 'rack-flash'
@@ -17,12 +17,12 @@ enable :sessions
 	end
 
 	get '/' do
-		@flash = flash[:notice]
+	  @flash = flash[:notice]
 	  haml :index
 	end
 
 	post '/resultat' do
-		session[:filter] = params[:filter]
+	  session[:filter] = params[:filter]
 	  session[:streamType] = params[:streamType]
 	  session[:streamArgument] = params[:streamArgument]
 	  session[:login] = params[:login]
@@ -32,11 +32,6 @@ enable :sessions
 
 	get '/resultat' do
 		
-		@client =  client
-		@db = db
-		@columnsCollection = columnsCollection
-		@usersCollection = usersCollection
-
 		filter = session[:filter] 
 	  streamType = session[:streamType]
 	  streamArgument = session[:streamArgument].split
@@ -56,19 +51,17 @@ enable :sessions
 	    "viewer"=>308762265.0}] 
 	  }
 
-	  @columnsCollection.insert(to_insert_to_columns)
-	  column_id = @columnsCollection.find.sort(:_id => :desc ).limit(1).find.each {|i| p i} ['_id']
-	  
-	  to_insert_to_users = { 
-	  "columns"=>[column_id],
-	  "login"=>login 
-		}
+	  column_id = columnsCollection.insert(to_insert_to_columns)
 
-		@usersCollection.insert(to_insert_to_users)
+	  begin
+	  	user_id_to_update = usersCollection.find({"login" => session[:login]}).find.each{|i| p i}['_id']
+	  rescue Exception => e
+	  	puts "the user you want to add columns to couldn't be found. Here is the error message : #{e.message}"
+	  end
 
-		user_id = @usersCollection.find.sort(:_id => :desc ).limit(1).find.each {|i| p i} ['_id']
+		usersCollection.update( {"_id" => user_id_to_update }, {"$set" => {"columns" => column_id }} )
 
-		flash[:notice] = "Here is the user_id from users collection to be inserted in shore : #{user_id}"
+		flash[:notice] = "Here is the user_id from users collection to be inserted in shore : #{user_id_to_update}"
 
 	  #binding.pry
 	  redirect '/'
@@ -76,16 +69,16 @@ enable :sessions
 
 helpers do
 	def client
-		@client = Mongo::Connection.new("mongocfg1.fetcher")
+		@client ||= Mongo::Connection.new("mongocfg1.fetcher")
 	end
 	def db
-		@db = @client['test']
+		db ||= client['test']
 	end
 	def columnsCollection
-		@coll = @db['columns']
+		coll ||= db['columns']
 	end
 	def usersCollection
-		@coll = @db['users']
+		coll ||= db['users']
 	end
 end
 

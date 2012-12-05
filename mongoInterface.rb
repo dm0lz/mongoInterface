@@ -26,19 +26,21 @@ enable :sessions
 	  session[:streamType] = params[:streamType]
 	  session[:streamArgument] = params[:streamArgument]
 	  session[:login] = params[:login]
-
+	  session[:viewer] = params[:viewer]
+	  session[:column_object_id] = params[:column_object_id]
+	  
 	  redirect '/resultat'
 	end
 
 	get '/resultat' do
 		
-		filter = session[:filter] 
+	  filter = session[:filter] 
 	  streamType = session[:streamType]
 	  streamArgument = session[:streamArgument].split
 	  login = session[:login] 
 	  
 	 to_insert_to_columns = { 
-	 	"filter"=>
+	 "filter"=>
 	  [{"type"=>"text",
 	    "property"=>"articleBody",
 	    "operator"=>"includes",
@@ -47,11 +49,18 @@ enable :sessions
 	  [{"streamType"=> streamType,
 	    "streamArgument"=> streamArgument,
 	    "provider"=>"twitter",
-	    "endpoint"=>"user",
-	    "viewer"=>308762265.0}] 
+	    "endpoint"=> streamType,
+	    "viewer"=> session[:viewer] }] 
 	  }
 
-	  column_id = columnsCollection.insert(to_insert_to_columns)
+	  to_insert_to_source = {
+	  	"streamType"=> streamType,
+	    "streamArgument"=> streamArgument,
+	    "provider"=>"twitter",
+	    "endpoint"=> streamType,
+	    "viewer"=> session[:viewer] 
+	  }
+
 
 	  begin
 	  	user_id_to_update = usersCollection.find({"login" => session[:login]}).find.each{|i| p i}['_id']
@@ -59,9 +68,17 @@ enable :sessions
 	  	puts "the user you want to add columns to couldn't be found. Here is the error message : #{e.message}"
 	  end
 
-		usersCollection.update( {"_id" => user_id_to_update }, {"$set" => {"columns" => column_id }} )
+#binding.pry
 
-		flash[:notice] = "Here is the user_id from users collection to be inserted in shore : #{user_id_to_update}"
+	  if session[:column_object_id]
+	  	columnsCollection.update( { "_id" => BSON::ObjectId(session[:column_object_id]) }, { "$push" => { "source" => to_insert_to_source } } )
+		usersCollection.update( {"_id" => user_id_to_update }, {"$push" => { "columns" => BSON::ObjectId(session[:column_object_id]) } } )
+	  else
+	  	column_id = columnsCollection.insert(to_insert_to_columns)
+		usersCollection.update( {"_id" => user_id_to_update }, {"$push" => {"columns" => column_id }} )
+	  end
+
+		flash[:notice] = "Here is the user_id from users collection to be inserted in shore : #{user_id_to_update} and here is the column_id you can use to add more sources : #{column_id}"
 
 	  #binding.pry
 	  redirect '/'
